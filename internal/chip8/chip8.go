@@ -1,5 +1,7 @@
 package models
 
+import "fmt"
+
 var chip8_fontset = [80]uint16{
 	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
 	0x20, 0x60, 0x20, 0x20, 0x70, // 1
@@ -69,8 +71,21 @@ func (chip8 *Chip8) LoadRom() {
 	//TODO
 }
 
-func (chip8 *Chip8) FetchOpcode() byte {
+func (chip8 *Chip8) FetchOpcode() uint16 {
 	first_part := chip8.memory[chip8.pc] << 8
 	opcode := first_part | chip8.memory[chip8.pc+1]
-	return opcode
+	return uint16(opcode)
+}
+
+func (chip8 *Chip8) EmulationCycle() {
+	opcode := chip8.FetchOpcode()
+
+	switch opcode & 0xF000 {
+	case 0xA000:
+		chip8.I = opcode & 0x0FFF
+		chip8.pc += 2
+
+	default:
+		fmt.Printf("Unknown opcode: %d", opcode)
+	}
 }
