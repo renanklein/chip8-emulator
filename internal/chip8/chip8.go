@@ -77,15 +77,45 @@ func (chip8 *Chip8) FetchOpcode() uint16 {
 	return uint16(opcode)
 }
 
+func (chip8 *Chip8) updateTimers() {
+	if chip8.delay_timer > 0 {
+		chip8.delay_timer--
+	}
+
+	if chip8.sound_timer > 0 && chip8.sound_timer == 1 {
+		chip8.sound_timer--
+	}
+}
+
 func (chip8 *Chip8) EmulationCycle() {
 	opcode := chip8.FetchOpcode()
 
 	switch opcode & 0xF000 {
+
+	case 0x1000:
+		chip8.pc = opcode & 0x0FFF
+
+	case 0x2000:
+		chip8.stack[chip8.sp] = uint8(chip8.pc)
+		chip8.sp++
+		chip8.pc = opcode & 0x0FFF
+
+	case 0x3000:
+		register_number := opcode & 0xF0FF
+		if uint16(chip8.registers[register_number]) == opcode&0x00FF {
+			// jumps instruction
+			chip8.pc += 4
+		} else {
+			chip8.pc += 2
+		}
+
 	case 0xA000:
 		chip8.I = opcode & 0x0FFF
 		chip8.pc += 2
+		chip8.updateTimers()
 
 	default:
 		fmt.Printf("Unknown opcode: %d", opcode)
+
 	}
 }
