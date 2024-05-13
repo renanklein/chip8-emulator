@@ -22,20 +22,20 @@ var chip8_fontset = [80]uint16{
 }
 
 type Chip8 struct {
-	memory      [4096]byte
-	registers   [16]byte
+	memory      [4096]uint8
+	registers   [16]uint8
 	I           uint16
 	pc          uint16
-	gfx         [64 * 32]byte
-	delay_timer byte
-	sound_timer byte
+	gfx         [64 * 32]uint8
+	delay_timer uint8
+	sound_timer uint8
 
 	// Stack
-	stack [16]uint8
+	stack [16]uint16
 	sp    uint8
 
 	// Keypad
-	keypad [16]byte
+	keypad [16]uint8
 }
 
 func (chip8 *Chip8) Initialize() {
@@ -96,21 +96,53 @@ func (chip8 *Chip8) EmulationCycle() {
 		chip8.pc = opcode & 0x0FFF
 
 	case 0x2000:
-		chip8.stack[chip8.sp] = uint8(chip8.pc)
+		chip8.stack[chip8.sp] = chip8.pc
 		chip8.sp++
 		chip8.pc = opcode & 0x0FFF
 
 	case 0x3000:
-		register_number := opcode & 0xF0FF
+		register_number := opcode & 0x0F00
 		if uint16(chip8.registers[register_number]) == opcode&0x00FF {
 			// jumps instruction
 			chip8.pc += 4
 		} else {
 			chip8.pc += 2
 		}
+	case 0x4000:
+		register_number := opcode & 0x0F00
+		if uint16(chip8.registers[register_number]>>8) != opcode&0x00FF {
+			chip8.pc += 4
+		} else {
+			chip8.pc += 2
+		}
+
+	case 0x5000:
+		first_register_index := opcode & 0x0F00
+		second_register_index := opcode & 0x00F0
+
+		if (chip8.registers[first_register_index] >> 8) == (chip8.registers[second_register_index] >> 4) {
+			chip8.pc += 4
+		} else {
+			chip8.pc += 2
+		}
+	case 0x6000:
+		register_index := (opcode & 0x0F00) >> 8
+		chip8.registers[register_index] = (opcode & 0x00FF)
+
+	case 0x7000:
+		register_index := (opcode & 0x0F00) >> 8
+		result := chip8.registers[register_index] + (opcode & 0x00FF)
+
+		if result > 256 {
+			result = result - 256
+		}
+
+		chip8.registers[register_index] = result
+
+		chip8.pc += 2
 
 	case 0xA000:
-		chip8.I = opcode & 0x0FFF
+		chip8.I = (opcode & 0x0FFF)
 		chip8.pc += 2
 		chip8.updateTimers()
 
