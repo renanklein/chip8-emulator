@@ -1,6 +1,9 @@
 package models
 
-import "fmt"
+import (
+	"fmt"
+	"math/rand"
+)
 
 var chip8_fontset = [80]uint16{
 	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
@@ -145,6 +148,34 @@ func (chip8 *Chip8) EmulationCycle() {
 		chip8.I = (opcode & 0x0FFF)
 		chip8.pc += 2
 		chip8.updateTimers()
+
+	case 0xB000:
+		opcode_addr := (opcode & 0x0FFF)
+		chip8.pc = opcode_addr + uint16(chip8.registers[0])
+
+	case 0xC000:
+		register_index := (opcode & 0x0F00) >> 8
+		rand_number := rand.Intn(256)
+
+		chip8.registers[register_index] = rand_number & (opcode & 0x00FF)
+		chip8.pc += 2
+
+	case 0xD000:
+		x := (opcode & 0x0F00) >> 8
+		y := (opcode & 0x00F0) >> 4
+		height := (opcode & 0x000F)
+
+		chip8.registers[0xF] = 0
+
+		// Screen line loop
+		for yLine := 0; yLine < int(height); yLine++ {
+			line := chip8.memory[chip8.I+uint16(yLine)]
+
+			//Pixel from each line loop
+			for xLine := 0; xLine < 8; xLine++ {
+
+			}
+		}
 
 	default:
 		fmt.Printf("Unknown opcode: %d", opcode)
