@@ -33,6 +33,8 @@ type Chip8 struct {
 	delay_timer uint8
 	sound_timer uint8
 
+	draw_screen bool
+
 	// Stack
 	stack [16]uint16
 	sp    uint8
@@ -92,6 +94,9 @@ func (chip8 *Chip8) updateTimers() {
 
 func (chip8 *Chip8) EmulationCycle() {
 	opcode := chip8.FetchOpcode()
+
+	x := (opcode & 0x0F00) >> 8
+	y := (opcode & 0x00F0) >> 4
 
 	switch opcode & 0xF000 {
 
@@ -161,8 +166,6 @@ func (chip8 *Chip8) EmulationCycle() {
 		chip8.pc += 2
 
 	case 0xD000:
-		x := (opcode & 0x0F00) >> 8
-		y := (opcode & 0x00F0) >> 4
 		height := (opcode & 0x000F)
 
 		chip8.registers[0xF] = 0
@@ -173,12 +176,70 @@ func (chip8 *Chip8) EmulationCycle() {
 
 			//Pixel from each line loop
 			for xLine := 0; xLine < 8; xLine++ {
+				if (line & (0x80 >> xLine)) != 0 {
+					if chip8.gfx[x+uint16(xLine)+(y+uint16(yLine)*64)] == 1 {
+						chip8.registers[0xf] = 1
+					}
 
+					chip8.gfx[x+uint16(xLine)+(y+uint16(yLine)*64)] ^= 1
+				}
 			}
+		}
+
+		chip8.draw_screen = true
+		chip8.pc += 2
+
+		switch opcode & 0xF00F {
+		case 0x8000:
+			chip8.registers[x] = chip8.registers[y]
+
+			chip8.pc += 2
+
+		case 0x8001:
+			chip8.registers[x] = (chip8.registers[x] | chip8.registers[y])
+
+			chip8.pc += 2
+
+		case 0x8002:
+			chip8.registers[x] = (chip8.registers[x] & chip8.registers[y])
+
+			chip8.pc += 2
+
+		case 0x8003:
+			chip8.registers[x] = (chip8.registers[x] ^ chip8.registers[y])
+
+			chip8.pc += 2
+
+		case 0x8004:
+			result := chip8.registers[x] + chip8.registers[y]
+
+			if result > 0xFF {
+				chip8.registers[0xf] = 1
+			} else {
+				chip8.registers[0xf] = 0
+			}
+
+			chip8.registers[x] = result
+
+			chip8.pc += 2
+
+		case 0x8005:
+			if chip8.registers[y] > chip8.registers[x] {
+				chip8.registers[0xf] = 0
+			} else {
+				chip8.registers[0xf] = 1
+			}
+
+			result := chip8.registers[x] - chip8.registers[y]
+
+			chip8.registers[x] = result
+
+			chip8.pc += 2
 		}
 
 	default:
 		fmt.Printf("Unknown opcode: %d", opcode)
 
 	}
+
 }
