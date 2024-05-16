@@ -1,28 +1,9 @@
-package models
+package chip8
 
 import (
 	"fmt"
 	"math/rand"
 )
-
-var chip8_fontset = [80]uint16{
-	0xF0, 0x90, 0x90, 0x90, 0xF0, // 0
-	0x20, 0x60, 0x20, 0x20, 0x70, // 1
-	0xF0, 0x10, 0xF0, 0x80, 0xF0, // 2
-	0xF0, 0x10, 0xF0, 0x10, 0xF0, // 3
-	0x90, 0x90, 0xF0, 0x10, 0x10, // 4
-	0xF0, 0x80, 0xF0, 0x10, 0xF0, // 5
-	0xF0, 0x80, 0xF0, 0x90, 0xF0, // 6
-	0xF0, 0x10, 0x20, 0x40, 0x40, // 7
-	0xF0, 0x90, 0xF0, 0x90, 0xF0, // 8
-	0xF0, 0x90, 0xF0, 0x10, 0xF0, // 9
-	0xF0, 0x90, 0xF0, 0x90, 0x90, // A
-	0xE0, 0x90, 0xE0, 0x90, 0xE0, // B
-	0xF0, 0x80, 0x80, 0x80, 0xF0, // C
-	0xE0, 0x90, 0x90, 0x90, 0xE0, // D
-	0xF0, 0x80, 0xF0, 0x80, 0xF0, // E
-	0xF0, 0x80, 0xF0, 0x80, 0x80, // F
-}
 
 type Chip8 struct {
 	memory      [4096]uint8
@@ -189,6 +170,13 @@ func (chip8 *Chip8) EmulationCycle() {
 		chip8.draw_screen = true
 		chip8.pc += 2
 
+		switch opcode & 0xF0FF {
+		case 0xE09E:
+			if chip8.registers[x] != chip8.registers[y] {
+
+			}
+		}
+
 		switch opcode & 0xF00F {
 		case 0x8000:
 			chip8.registers[x] = chip8.registers[y]
@@ -235,6 +223,38 @@ func (chip8 *Chip8) EmulationCycle() {
 			chip8.registers[x] = result
 
 			chip8.pc += 2
+
+		case 0x8006:
+			chip8.registers[0xF] = (chip8.registers[x] & 0x1)
+			chip8.registers[x] = (chip8.registers[x] >> 1)
+
+			chip8.pc += 2
+
+		case 0x8007:
+			if chip8.registers[x] > chip8.registers[y] {
+				chip8.registers[0xf] = 0
+			} else {
+				chip8.registers[0xf] = 1
+			}
+
+			result := chip8.registers[y] - chip8.registers[x]
+
+			chip8.registers[x] = result
+
+			chip8.pc += 2
+
+		case 0x800E:
+			chip8.registers[0xF] = chip8.registers[x] >> 7
+			chip8.registers[x] = chip8.registers[x] << 1
+
+			chip8.pc += 2
+
+		case 0x9000:
+			if chip8.registers[x] != chip8.registers[y] {
+				chip8.pc += 4
+			} else {
+				chip8.pc += 2
+			}
 		}
 
 	default:
