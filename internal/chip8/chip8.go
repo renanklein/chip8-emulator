@@ -172,9 +172,44 @@ func (chip8 *Chip8) EmulationCycle() {
 
 		switch opcode & 0xF0FF {
 		case 0xE09E:
-			if chip8.registers[x] != chip8.registers[y] {
-
+			if IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
+				chip8.pc += 2
 			}
+		case 0xE0A1:
+			if !IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
+				chip8.pc += 2
+			}
+
+		case 0xF007:
+			chip8.registers[x] = chip8.delay_timer
+			chip8.pc += 2
+
+		case 0xF00A:
+			for i := 0; i < len(GetKeys()); i++ {
+				if IsPressed(i) {
+					chip8.registers[x] = uint8(i)
+					chip8.pc += 2
+				}
+			}
+		case 0xF015:
+			chip8.delay_timer = chip8.registers[x]
+			chip8.pc += 2
+
+		case 0xF018:
+			chip8.sound_timer = chip8.registers[x]
+			chip8.pc += 2
+
+		case 0xF01E:
+			chip8.I += uint16(chip8.registers[x])
+			chip8.pc += 2
+
+		case 0xF029:
+			chip8.I += uint16(chip8.registers[x]) * 5
+			chip8.pc += 2
 		}
 
 		switch opcode & 0xF00F {
