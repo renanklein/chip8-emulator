@@ -116,17 +116,17 @@ func (chip8 *Chip8) EmulationCycle() {
 		}
 	case 0x6000:
 		register_index := (opcode & 0x0F00) >> 8
-		chip8.registers[register_index] = (opcode & 0x00FF)
+		chip8.registers[register_index] = uint8(opcode & 0x00FF)
 
 	case 0x7000:
 		register_index := (opcode & 0x0F00) >> 8
-		result := chip8.registers[register_index] + (opcode & 0x00FF)
+		result := uint16(chip8.registers[register_index]) + opcode&0x00FF
 
-		if result > 256 {
-			result = result - 256
+		if result > 255 {
+			result -= 256
 		}
 
-		chip8.registers[register_index] = result
+		chip8.registers[register_index] = uint8(result)
 
 		chip8.pc += 2
 
@@ -141,9 +141,9 @@ func (chip8 *Chip8) EmulationCycle() {
 
 	case 0xC000:
 		register_index := (opcode & 0x0F00) >> 8
-		rand_number := rand.Intn(256)
+		rand_number := uint8(rand.Intn(256))
 
-		chip8.registers[register_index] = rand_number & (opcode & 0x00FF)
+		chip8.registers[register_index] = rand_number & uint8(opcode&0x00FF)
 		chip8.pc += 2
 
 	case 0xD000:
@@ -210,6 +210,32 @@ func (chip8 *Chip8) EmulationCycle() {
 		case 0xF029:
 			chip8.I += uint16(chip8.registers[x]) * 5
 			chip8.pc += 2
+
+		case 0xF033:
+			number := chip8.registers[x]
+			chip8.memory[chip8.I] = number / 100
+			chip8.memory[chip8.I+1] = (number % 100) / 10
+			chip8.memory[chip8.I+2] = (number % 100) % 10
+
+			chip8.pc += 2
+
+		case 0xF055:
+			var i uint16
+			for i = 0; i <= x; i++ {
+				memory_addr := chip8.I + i
+				chip8.memory[memory_addr] = chip8.registers[i]
+			}
+
+			chip8.pc += 2
+
+		case 0xF065:
+			var i uint16
+			for i = 0; i <= x; i++ {
+				chip8.registers[i] = chip8.memory[chip8.I+i]
+			}
+
+			chip8.pc += 2
+
 		}
 
 		switch opcode & 0xF00F {
