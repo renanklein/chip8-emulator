@@ -24,7 +24,7 @@ type Chip8 struct {
 	keypad [16]uint8
 }
 
-func (chip8 *Chip8) Initialize() {
+func (chip8 *Chip8) Initialize(gameData []byte) {
 	chip8.pc = 0x200
 	chip8.I = 0
 	chip8.sp = 0
@@ -32,7 +32,7 @@ func (chip8 *Chip8) Initialize() {
 	chip8.clearMemory()
 	chip8.clearRegisters()
 	chip8.clearStack()
-	chip8.LoadRom()
+	chip8.LoadRom(gameData)
 }
 
 func (chip8 *Chip8) clearMemory() {
@@ -53,8 +53,10 @@ func (chip8 *Chip8) clearRegisters() {
 	}
 }
 
-func (chip8 *Chip8) LoadRom() {
-	//TODO
+func (chip8 *Chip8) LoadRom(data []byte) {
+	for i := 0; i < len(data); i++ {
+		chip8.memory[i+512] = data[i]
+	}
 }
 
 func (chip8 *Chip8) FetchOpcode() uint16 {
