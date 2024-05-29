@@ -31,5 +31,16 @@ func (screen *Screen) Clear() {
 }
 
 func (screen *Screen) Render() {
+	//image := ebiten.NewImage(screen.width, screen.height)
+
+	for y := 0; y < screen.height; y++ {
+		for x := 0; x < screen.width; x++ {
+			if screen.pixels[x][y] == 1 {
+				//image.Fill(color.Black)
+			} else {
+				//image.Fill(color.White)
+			}
+		}
+	}
 
 }
