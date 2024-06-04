@@ -54,6 +54,10 @@ func (chip8 *Chip8) clearRegisters() {
 }
 
 func (chip8 *Chip8) LoadRom(data []byte) {
+	if (4096 - 512) < len(data) {
+		panic("Fatal Error ! Cannot load ROM, it's too big")
+	}
+
 	for i := 0; i < len(data); i++ {
 		chip8.memory[i+512] = data[i]
 	}
@@ -324,5 +328,7 @@ func (chip8 *Chip8) EmulationCycle() {
 		fmt.Printf("Unknown opcode: %d", opcode)
 
 	}
+
+	chip8.updateTimers()
 
 }

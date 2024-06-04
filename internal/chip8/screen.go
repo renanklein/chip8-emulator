@@ -1,10 +1,13 @@
 package chip8
 
+import (
+	rl "github.com/gen2brain/raylib-go/raylib"
+)
+
 type Screen struct {
 	width  int
 	height int
 	scale  int
-	pixels [][]int
 }
 
 func Initialize(height int, width int, scale int) Screen {
@@ -13,32 +16,25 @@ func Initialize(height int, width int, scale int) Screen {
 	screen.width = width
 	screen.height = height
 	screen.scale = scale
-	screen.pixels = make([][]int, height)
-
-	for i := 0; i < width; i++ {
-		screen.pixels[i] = make([]int, screen.width)
-	}
 
 	return screen
 }
 
-func (screen *Screen) Clear() {
+func (screen *Screen) Clear(c8 Chip8) {
 	for y := 0; y < screen.height; y++ {
 		for x := 0; x < screen.width; x++ {
-			screen.pixels[x][y] = 0
+			c8.gfx[(y*64)+x] = 0
 		}
 	}
 }
 
-func (screen *Screen) Render() {
-	//image := ebiten.NewImage(screen.width, screen.height)
-
+func (screen *Screen) Render(c8 Chip8) {
 	for y := 0; y < screen.height; y++ {
 		for x := 0; x < screen.width; x++ {
-			if screen.pixels[x][y] == 1 {
-				//image.Fill(color.Black)
+			if c8.gfx[(y*64)+x] == 0 {
+				rl.DrawPixel(int32(x), int32(x), rl.Black)
 			} else {
-				//image.Fill(color.White)
+				rl.DrawPixel(int32(x), int32(x), rl.White)
 			}
 		}
 	}
