@@ -17,6 +17,10 @@ func Initialize(height int, width int, scale int) Screen {
 	screen.height = height
 	screen.scale = scale
 
+	rl.InitWindow(int32(width)*int32(scale), int32(height)*int32(scale), "Chip 8 Emulator")
+	rl.SetTargetFPS(60)
+	rl.ClearBackground(rl.Black)
+
 	return screen
 }
 
