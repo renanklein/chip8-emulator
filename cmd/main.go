@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/renanklein/chip8-emulator/internal/chip8"
 )
 
@@ -19,7 +20,23 @@ func main() {
 	game_data := getRomData(os.Args[1])
 
 	c8 := chip8.Chip8{}
+	sc := chip8.Initialize(DISPLAY_HEIGHT, DISPLAY_WIDTH, SCALE)
+
 	c8.Initialize(game_data)
+
+	for !rl.WindowShouldClose() {
+		c8.EmulationCycle()
+
+		if c8.ShouldDraw() {
+			rl.BeginDrawing()
+			sc.Render(c8)
+			rl.EndDrawing()
+
+			c8.SetDraw(false)
+		}
+	}
+
+	rl.CloseWindow()
 }
 
 func getRomData(filename string) []byte {

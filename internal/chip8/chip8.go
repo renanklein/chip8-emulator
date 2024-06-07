@@ -24,6 +24,14 @@ type Chip8 struct {
 	keypad [16]uint8
 }
 
+func (chip8 *Chip8) ShouldDraw() bool {
+	return chip8.draw_screen
+}
+
+func (chip8 *Chip8) SetDraw(draw bool) {
+	chip8.draw_screen = draw
+}
+
 func (chip8 *Chip8) Initialize(gameData []byte) {
 	chip8.pc = 0x200
 	chip8.I = 0
