@@ -72,9 +72,9 @@ func (chip8 *Chip8) LoadRom(data []byte) {
 }
 
 func (chip8 *Chip8) FetchOpcode() uint16 {
-	first_part := chip8.memory[chip8.pc] << 8
-	opcode := first_part | chip8.memory[chip8.pc+1]
-	return uint16(opcode)
+	first_part := (uint16(chip8.memory[chip8.pc]) << 8)
+	opcode := first_part | uint16(chip8.memory[chip8.pc+1])
+	return opcode
 }
 
 func (chip8 *Chip8) updateTimers() {
@@ -113,7 +113,7 @@ func (chip8 *Chip8) EmulationCycle() {
 		}
 	case 0x4000:
 		register_number := opcode & 0x0F00
-		if uint16(chip8.registers[register_number]>>8) != opcode&0x00FF {
+		if (uint16(chip8.registers[register_number]) >> 8) != opcode&0x00FF {
 			chip8.pc += 4
 		} else {
 			chip8.pc += 2
@@ -123,7 +123,7 @@ func (chip8 *Chip8) EmulationCycle() {
 		first_register_index := opcode & 0x0F00
 		second_register_index := opcode & 0x00F0
 
-		if (chip8.registers[first_register_index] >> 8) == (chip8.registers[second_register_index] >> 4) {
+		if (uint16(chip8.registers[first_register_index]) >> 8) == (uint16(chip8.registers[second_register_index]) >> 4) {
 			chip8.pc += 4
 		} else {
 			chip8.pc += 2
@@ -333,7 +333,7 @@ func (chip8 *Chip8) EmulationCycle() {
 		}
 
 	default:
-		fmt.Printf("Unknown opcode: %d", opcode)
+		fmt.Printf("Unknown opcode: %d", opcode&0xF000)
 
 	}
 
