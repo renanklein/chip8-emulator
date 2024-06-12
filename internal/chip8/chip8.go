@@ -131,6 +131,7 @@ func (chip8 *Chip8) EmulationCycle() {
 	case 0x6000:
 		register_index := (opcode & 0x0F00) >> 8
 		chip8.registers[register_index] = uint8(opcode & 0x00FF)
+		chip8.pc += 2
 
 	case 0x7000:
 		register_index := (opcode & 0x0F00) >> 8
