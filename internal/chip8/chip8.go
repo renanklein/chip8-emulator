@@ -95,6 +95,20 @@ func (chip8 *Chip8) EmulationCycle() {
 
 	fmt.Printf("Opcode: %x", opcode)
 
+	switch opcode & 0xFFFF {
+	case 0x00E0:
+		for i := 0; i < len(chip8.gfx); i++ {
+			chip8.gfx[i] = 0x0
+		}
+
+		chip8.draw_screen = true
+		chip8.pc += 2
+
+	case 0x00EE:
+		chip8.sp--
+		chip8.pc = chip8.stack[chip8.sp]
+	}
+
 	switch opcode & 0xF00F {
 
 	case 0x8000:
@@ -245,6 +259,7 @@ func (chip8 *Chip8) EmulationCycle() {
 	}
 
 	switch opcode & 0xF000 {
+
 	case 0x1000:
 		chip8.pc = opcode & 0x0FFF
 
