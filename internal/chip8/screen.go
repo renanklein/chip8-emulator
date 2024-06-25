@@ -36,9 +36,9 @@ func (screen *Screen) Render(c8 Chip8) {
 	for y := 0; y < screen.height; y++ {
 		for x := 0; x < screen.width; x++ {
 			if c8.gfx[(y*64)+x] == 0 {
-				rl.DrawPixel(int32(x), int32(x), rl.Black)
+				rl.DrawPixel(int32(x), int32(y), rl.Black)
 			} else {
-				rl.DrawPixel(int32(x), int32(x), rl.White)
+				rl.DrawPixel(int32(x), int32(y), rl.White)
 			}
 		}
 	}
