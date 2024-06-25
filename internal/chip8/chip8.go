@@ -10,7 +10,7 @@ type Chip8 struct {
 	registers   [16]uint8
 	I           uint16
 	pc          uint16
-	gfx         [64 * 32]uint8
+	gfx         [64 * 32]uint32
 	delay_timer uint8
 	sound_timer uint8
 
@@ -325,18 +325,22 @@ func (chip8 *Chip8) EmulationCycle() {
 
 		chip8.registers[0xF] = 0
 
+		xPos := chip8.registers[x] % 64
+		yPos := chip8.registers[y] % 32
+
 		// Screen line loop
-		for yLine := 0; yLine < int(height); yLine++ {
-			line := chip8.memory[chip8.I+uint16(yLine)]
+		for line := 0; line < int(height); line++ {
+			spriteByte := chip8.memory[chip8.I+uint16(line)]
 
 			//Pixel from each line loop
-			for xLine := 0; xLine < 8; xLine++ {
-				if (line & (0x80 >> xLine)) != 0 {
-					if chip8.gfx[x+uint16(xLine)+(y+uint16(yLine)*64)] == 1 {
+			for col := 0; col < 8; col++ {
+				screenPixel := &chip8.gfx[(yPos+uint8(line))*64+(xPos+uint8(col))]
+				if (spriteByte & (0x80 >> col)) != 0 {
+					if *screenPixel == 0xFFFFFFFF {
 						chip8.registers[0xf] = 1
 					}
 
-					chip8.gfx[x+uint16(xLine)+(y+uint16(yLine)*64)] ^= 1
+					*screenPixel ^= 0xFFFFFFFF
 				}
 			}
 		}
