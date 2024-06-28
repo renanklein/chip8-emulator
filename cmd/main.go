@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	rl "github.com/gen2brain/raylib-go/raylib"
 	"github.com/renanklein/chip8-emulator/internal/chip8"
 )
 
