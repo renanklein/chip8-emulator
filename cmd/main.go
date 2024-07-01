@@ -23,19 +23,14 @@ func main() {
 
 	c8.Initialize(game_data)
 
-	for !rl.WindowShouldClose() {
+	quit := false
+
+	for !quit {
 		c8.EmulationCycle()
-
 		if c8.ShouldDraw() {
-			rl.BeginDrawing()
 			sc.Render(c8)
-			rl.EndDrawing()
-
-			c8.SetDraw(false)
 		}
 	}
-
-	rl.CloseWindow()
 }
 
 func getRomData(filename string) []byte {
