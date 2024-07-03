@@ -46,7 +46,7 @@ func (screen *Screen) Clear(c8 Chip8) {
 }
 
 func (screen *Screen) Render(c8 Chip8) {
-	videoPitch := screen.width * 4
+	videoPitch := screen.width * 2
 
 	screen.texture.Update(nil, unsafe.Pointer(&c8.gfx), videoPitch)
 	screen.renderer.Clear()

@@ -1,7 +1,6 @@
 package chip8
 
 import (
-	"fmt"
 	"math/rand"
 )
 
@@ -82,7 +81,7 @@ func (chip8 *Chip8) updateTimers() {
 		chip8.delay_timer--
 	}
 
-	if chip8.sound_timer > 0 && chip8.sound_timer == 1 {
+	if chip8.sound_timer > 0 {
 		chip8.sound_timer--
 	}
 }
@@ -92,8 +91,6 @@ func (chip8 *Chip8) EmulationCycle() {
 
 	x := (opcode & 0x0F00) >> 8
 	y := (opcode & 0x00F0) >> 4
-
-	fmt.Printf("Opcode: %x", opcode)
 
 	switch opcode & 0xFFFF {
 	case 0x00E0:
@@ -117,30 +114,30 @@ func (chip8 *Chip8) EmulationCycle() {
 		chip8.pc += 2
 
 	case 0x8001:
-		chip8.registers[x] = (chip8.registers[x] | chip8.registers[y])
+		chip8.registers[x] |= chip8.registers[y]
 
 		chip8.pc += 2
 
 	case 0x8002:
-		chip8.registers[x] = (chip8.registers[x] & chip8.registers[y])
+		chip8.registers[x] &= chip8.registers[y]
 
 		chip8.pc += 2
 
 	case 0x8003:
-		chip8.registers[x] = (chip8.registers[x] ^ chip8.registers[y])
+		chip8.registers[x] ^= chip8.registers[y]
 
 		chip8.pc += 2
 
 	case 0x8004:
 		result := chip8.registers[x] + chip8.registers[y]
 
-		if result > 0xFF {
+		if result > 255 {
 			chip8.registers[0xf] = 1
 		} else {
 			chip8.registers[0xf] = 0
 		}
 
-		chip8.registers[x] = result
+		chip8.registers[x] = result & 0xFF
 
 		chip8.pc += 2
 
@@ -212,9 +209,11 @@ func (chip8 *Chip8) EmulationCycle() {
 		for i := 0; i < len(GetKeys()); i++ {
 			if IsPressed(i) {
 				chip8.registers[x] = uint8(i)
-				chip8.pc += 2
 			}
 		}
+
+		chip8.pc += 2
+
 	case 0xF015:
 		chip8.delay_timer = chip8.registers[x]
 		chip8.pc += 2
@@ -270,7 +269,6 @@ func (chip8 *Chip8) EmulationCycle() {
 
 	case 0x3000:
 		if uint16(chip8.registers[x]) == opcode&0x00FF {
-			fmt.Printf("Entrou!!!")
 			// jumps instruction
 			chip8.pc += 4
 		} else {
@@ -301,7 +299,7 @@ func (chip8 *Chip8) EmulationCycle() {
 			result -= 256
 		}
 
-		chip8.registers[x] = uint8(result)
+		chip8.registers[x] += uint8(result)
 
 		chip8.pc += 2
 
@@ -334,10 +332,11 @@ func (chip8 *Chip8) EmulationCycle() {
 
 			//Pixel from each line loop
 			for col := 0; col < 8; col++ {
+				spritePixel := spriteByte & (0x80 >> col)
 				screenPixel := &chip8.gfx[(yPos+uint8(line))*64+(xPos+uint8(col))]
-				if (spriteByte & (0x80 >> col)) != 0 {
+				if spritePixel != 0 {
 					if *screenPixel == 0xFFFFFFFF {
-						chip8.registers[0xf] = 1
+						chip8.registers[0xF] = 1
 					}
 
 					*screenPixel ^= 0xFFFFFFFF

@@ -9,7 +9,7 @@ import (
 
 const DISPLAY_WIDTH = 64
 const DISPLAY_HEIGHT = 32
-const SCALE = 10
+const SCALE = 30
 
 func main() {
 	if len(os.Args) < 2 {
