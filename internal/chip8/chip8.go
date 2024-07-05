@@ -4,8 +4,6 @@ import (
 	"math/rand"
 )
 
-const FONTSET_START_ADDRESS = 0x50
-
 type Chip8 struct {
 	memory      [4096]uint8
 	registers   [16]uint8
@@ -34,7 +32,6 @@ func (chip8 *Chip8) SetDraw(draw bool) {
 }
 
 func (chip8 *Chip8) Initialize(gameData []byte) {
-
 	chip8.pc = 0x200
 	chip8.I = 0
 	chip8.sp = 0
@@ -42,6 +39,7 @@ func (chip8 *Chip8) Initialize(gameData []byte) {
 	chip8.clearMemory()
 	chip8.clearRegisters()
 	chip8.clearStack()
+  chip8.loadFontset()
 	chip8.LoadRom(gameData)
 }
 
@@ -65,7 +63,7 @@ func (chip8 *Chip8) clearRegisters() {
 
 func (chip8 *Chip8) loadFontset() {
 	for i := 0; i < len(fontset); i++ {
-		chip8.memory[FONTSET_START_ADDRESS+i] = fontset[i]
+		chip8.memory[i] = fontset[i]
 	}
 }
 
@@ -95,84 +93,25 @@ func (chip8 *Chip8) updateTimers() {
 	}
 }
 
-func (chip8 *Chip8) OP_AND_F0FF(x uint16, y uint16, opcode uint16) {
 
-	switch opcode & 0xF0FF {
-	case 0xE09E:
-		if IsPressed(int(chip8.registers[x])) {
-			chip8.pc += 4
-		} else {
-			chip8.pc += 2
-		}
-	case 0xE0A1:
-		if !IsPressed(int(chip8.registers[x])) {
-			chip8.pc += 4
-		} else {
-			chip8.pc += 2
-		}
-
-	case 0xF007:
-		chip8.registers[x] = chip8.delay_timer
-		chip8.pc += 2
-
-	case 0xF00A:
-		for i := 0; i < len(GetKeys()); i++ {
-			if IsPressed(i) {
-				chip8.registers[x] = uint8(i)
-			}
-		}
-
-		chip8.pc += 2
-
-	case 0xF015:
-		chip8.delay_timer = chip8.registers[x]
-		chip8.pc += 2
-
-	case 0xF018:
-		chip8.sound_timer = chip8.registers[x]
-		chip8.pc += 2
-
-	case 0xF01E:
-		chip8.I += uint16(chip8.registers[x])
-		chip8.pc += 2
-
-	case 0xF029:
-		digit := chip8.registers[x]
-
-		chip8.I += uint16(FONTSET_START_ADDRESS + (digit * 5))
-		chip8.pc += 2
-
-	case 0xF033:
-		number := chip8.registers[x]
-		chip8.memory[chip8.I] = number / 100
-		chip8.memory[chip8.I+1] = (number % 100) / 10
-		chip8.memory[chip8.I+2] = (number % 100) % 10
-
-		chip8.pc += 2
-
-	case 0xF055:
-		var i uint16
-		for i = 0; i <= x; i++ {
-			memory_addr := chip8.I + i
-			chip8.memory[memory_addr] = chip8.registers[i]
-		}
-
-		chip8.pc += 2
-
-	case 0xF065:
-		var i uint16
-		for i = 0; i <= x; i++ {
-			chip8.registers[i] = chip8.memory[chip8.I+i]
-		}
-
-		chip8.pc += 2
-
-	}
-
-}
-
-func (chip8 *Chip8) OP_AND_F000(x uint16, y uint16, opcode uint16) {
+func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 	switch opcode & 0xF000 {
+
+	case 0x0000:
+		switch opcode {
+
+		case 0x00E0:
+			for i := 0; i < len(chip8.gfx); i++ {
+				chip8.gfx[i] = 0x0
+			}
+
+			chip8.draw_screen = true
+			chip8.pc += 2
+
+		case 0x00EE:
+			chip8.sp--
+			chip8.pc = chip8.stack[chip8.sp]
+		}
 
 	case 0x1000:
 		chip8.pc = opcode & 0x0FFF
@@ -218,6 +157,88 @@ func (chip8 *Chip8) OP_AND_F000(x uint16, y uint16, opcode uint16) {
 
 		chip8.pc += 2
 
+	case 0x8000:
+		switch opcode & 0xF {
+
+		case 0x0:
+			chip8.registers[x] = chip8.registers[y]
+
+			chip8.pc += 2
+
+		case 0x1:
+			chip8.registers[x] |= chip8.registers[y]
+
+			chip8.pc += 2
+
+		case 0x2:
+			chip8.registers[x] &= chip8.registers[y]
+
+			chip8.pc += 2
+
+		case 0x3:
+			chip8.registers[x] ^= chip8.registers[y]
+
+			chip8.pc += 2
+
+		case 0x4:
+			result := chip8.registers[x] + chip8.registers[y]
+
+			if result > 255 {
+				chip8.registers[0xf] = 1
+			} else {
+				chip8.registers[0xf] = 0
+			}
+
+			chip8.registers[x] = result & 0xFF
+
+			chip8.pc += 2
+
+		case 0x5:
+			if chip8.registers[y] > chip8.registers[x] {
+				chip8.registers[0xf] = 0
+			} else {
+				chip8.registers[0xf] = 1
+			}
+
+			result := chip8.registers[x] - chip8.registers[y]
+
+			chip8.registers[x] = result
+
+			chip8.pc += 2
+
+		case 0x6:
+			chip8.registers[0xF] = (chip8.registers[x] & 0x1)
+			chip8.registers[x] = (chip8.registers[x] >> 1)
+
+			chip8.pc += 2
+
+		case 0x7:
+			if chip8.registers[x] > chip8.registers[y] {
+				chip8.registers[0xf] = 0
+			} else {
+				chip8.registers[0xf] = 1
+			}
+
+			result := chip8.registers[y] - chip8.registers[x]
+
+			chip8.registers[x] = result
+
+			chip8.pc += 2
+
+		case 0xE:
+			chip8.registers[0xF] = chip8.registers[x] >> 7
+			chip8.registers[x] = chip8.registers[x] << 1
+
+			chip8.pc += 2
+		}
+
+	case 0x9000:
+		if chip8.registers[x] != chip8.registers[y] {
+			chip8.pc += 4
+		} else {
+			chip8.pc += 2
+		}
+
 	case 0xA000:
 		chip8.I = (opcode & 0x0FFF)
 		chip8.pc += 2
@@ -245,7 +266,7 @@ func (chip8 *Chip8) OP_AND_F000(x uint16, y uint16, opcode uint16) {
 		for line := 0; line < int(height); line++ {
 			spriteByte := chip8.memory[chip8.I+uint16(line)]
 
-			//Pixel from each line loop
+			// Pixel from each line loop
 			for col := 0; col < 8; col++ {
 				spritePixel := spriteByte & (0x80 >> col)
 				screenPixel := &chip8.gfx[(yPos+uint8(line))*64+(xPos+uint8(col))]
@@ -262,183 +283,92 @@ func (chip8 *Chip8) OP_AND_F000(x uint16, y uint16, opcode uint16) {
 		chip8.draw_screen = true
 		chip8.pc += 2
 
+	case 0xE000:
+		switch opcode & 0xFF {
+		case 0x9E:
+			if IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
+				chip8.pc += 2
+			}
+		case 0xA1:
+			if !IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
+				chip8.pc += 2
+			}
+
+		}
+	case 0xF000:
+		switch opcode & 0xFF {
+		case 0x07:
+			chip8.registers[x] = chip8.delay_timer
+			chip8.pc += 2
+
+		case 0x0A:
+			for i := 0; i < len(GetKeys()); i++ {
+				if IsPressed(i) {
+					chip8.registers[x] = uint8(i)
+				}
+			}
+
+			chip8.pc += 2
+
+		case 0x15:
+			chip8.delay_timer = chip8.registers[x]
+			chip8.pc += 2
+
+		case 0x18:
+			chip8.sound_timer = chip8.registers[x]
+			chip8.pc += 2
+
+		case 0x1E:
+			chip8.I += uint16(chip8.registers[x])
+			chip8.pc += 2
+
+		case 0x29:
+			digit := chip8.registers[x]
+
+			chip8.I += uint16(digit * 5)
+			chip8.pc += 2
+
+		case 0x33:
+			number := chip8.registers[x]
+			chip8.memory[chip8.I] = number / 100
+			chip8.memory[chip8.I+1] = (number % 100) / 10
+			chip8.memory[chip8.I+2] = (number % 100) % 10
+
+			chip8.pc += 2
+
+		case 0x55:
+			var i uint16
+			for i = 0; i <= x; i++ {
+				memory_addr := chip8.I + i
+				chip8.memory[memory_addr] = chip8.registers[i]
+			}
+
+			chip8.pc += 2
+
+		case 0x65:
+			var i uint16
+			for i = 0; i <= x; i++ {
+				chip8.registers[i] = chip8.memory[chip8.I+i]
+			}
+
+			chip8.pc += 2
+
+		}
+
 	}
 }
 
 func (chip8 *Chip8) EmulationCycle() {
-
 	opcode := chip8.FetchOpcode()
 
 	x := (opcode & 0x0F00) >> 8
 	y := (opcode & 0x00F0) >> 4
 
-	switch opcode & 0xF0FF {
-	case 0xE09E:
-		if IsPressed(int(chip8.registers[x])) {
-			chip8.pc += 4
-		} else {
-			chip8.pc += 2
-		}
-	case 0xE0A1:
-		if !IsPressed(int(chip8.registers[x])) {
-			chip8.pc += 4
-		} else {
-			chip8.pc += 2
-		}
-
-	case 0xF007:
-		chip8.registers[x] = chip8.delay_timer
-		chip8.pc += 2
-
-	case 0xF00A:
-		for i := 0; i < len(GetKeys()); i++ {
-			if IsPressed(i) {
-				chip8.registers[x] = uint8(i)
-			}
-		}
-
-		chip8.pc += 2
-
-	case 0xF015:
-		chip8.delay_timer = chip8.registers[x]
-		chip8.pc += 2
-
-	case 0xF018:
-		chip8.sound_timer = chip8.registers[x]
-		chip8.pc += 2
-
-	case 0xF01E:
-		chip8.I += uint16(chip8.registers[x])
-		chip8.pc += 2
-
-	case 0xF029:
-		digit := chip8.registers[x]
-
-		chip8.I += uint16(FONTSET_START_ADDRESS + (digit * 5))
-		chip8.pc += 2
-
-	case 0xF033:
-		number := chip8.registers[x]
-		chip8.memory[chip8.I] = number / 100
-		chip8.memory[chip8.I+1] = (number % 100) / 10
-		chip8.memory[chip8.I+2] = (number % 100) % 10
-
-		chip8.pc += 2
-
-	case 0xF055:
-		var i uint16
-		for i = 0; i <= x; i++ {
-			memory_addr := chip8.I + i
-			chip8.memory[memory_addr] = chip8.registers[i]
-		}
-
-		chip8.pc += 2
-
-	case 0xF065:
-		var i uint16
-		for i = 0; i <= x; i++ {
-			chip8.registers[i] = chip8.memory[chip8.I+i]
-		}
-
-		chip8.pc += 2
-
-	}
-
-	switch opcode & 0xFFFF {
-	case 0x00E0:
-		for i := 0; i < len(chip8.gfx); i++ {
-			chip8.gfx[i] = 0x0
-		}
-
-		chip8.draw_screen = true
-		chip8.pc += 2
-
-	case 0x00EE:
-		chip8.sp--
-		chip8.pc = chip8.stack[chip8.sp]
-	}
-
-	switch opcode & 0xF00F {
-
-	case 0x8000:
-		chip8.registers[x] = chip8.registers[y]
-
-		chip8.pc += 2
-
-	case 0x8001:
-		chip8.registers[x] |= chip8.registers[y]
-
-		chip8.pc += 2
-
-	case 0x8002:
-		chip8.registers[x] &= chip8.registers[y]
-
-		chip8.pc += 2
-
-	case 0x8003:
-		chip8.registers[x] ^= chip8.registers[y]
-
-		chip8.pc += 2
-
-	case 0x8004:
-		result := chip8.registers[x] + chip8.registers[y]
-
-		if result > 255 {
-			chip8.registers[0xf] = 1
-		} else {
-			chip8.registers[0xf] = 0
-		}
-
-		chip8.registers[x] = result & 0xFF
-
-		chip8.pc += 2
-
-	case 0x8005:
-		if chip8.registers[y] > chip8.registers[x] {
-			chip8.registers[0xf] = 0
-		} else {
-			chip8.registers[0xf] = 1
-		}
-
-		result := chip8.registers[x] - chip8.registers[y]
-
-		chip8.registers[x] = result
-
-		chip8.pc += 2
-
-	case 0x8006:
-		chip8.registers[0xF] = (chip8.registers[x] & 0x1)
-		chip8.registers[x] = (chip8.registers[x] >> 1)
-
-		chip8.pc += 2
-
-	case 0x8007:
-		if chip8.registers[x] > chip8.registers[y] {
-			chip8.registers[0xf] = 0
-		} else {
-			chip8.registers[0xf] = 1
-		}
-
-		result := chip8.registers[y] - chip8.registers[x]
-
-		chip8.registers[x] = result
-
-		chip8.pc += 2
-
-	case 0x800E:
-		chip8.registers[0xF] = chip8.registers[x] >> 7
-		chip8.registers[x] = chip8.registers[x] << 1
-
-		chip8.pc += 2
-
-	case 0x9000:
-		if chip8.registers[x] != chip8.registers[y] {
-			chip8.pc += 4
-		} else {
-			chip8.pc += 2
-		}
-	}
+  chip8.executeOpcodes(x, y, opcode)
 
 	chip8.updateTimers()
-
 }
