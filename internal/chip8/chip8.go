@@ -295,13 +295,18 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 		case 0x29:
 			digit := chip8.registers[x]
 
-			chip8.I += uint16(digit * 5)
+			chip8.I = 0x50 + uint16(digit * 5)
 
 		case 0x33:
 			number := chip8.registers[x]
-			chip8.memory[chip8.I] = number / 100
-			chip8.memory[chip8.I+1] = (number % 100) / 10
-			chip8.memory[chip8.I+2] = (number % 100) % 10
+
+			chip8.memory[chip8.I +2 ] = number % 10
+      number /= 10
+
+			chip8.memory[chip8.I+1] = number % 10
+      number /= 10
+
+      chip8.memory[chip8.I] = number % 10
 
 		case 0x55:
 			var i uint16
