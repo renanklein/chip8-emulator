@@ -1,6 +1,7 @@
 package chip8
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -12,7 +13,7 @@ type Chip8 struct {
 	registers   [16]uint8
 	I           uint16
 	pc          uint16
-	gfx         [64 * 32]uint32
+	gfx         [32][64]byte
 	delay_timer uint8
 	sound_timer uint8
 
@@ -28,6 +29,10 @@ type Chip8 struct {
 
 func (chip8 *Chip8) ShouldDraw() bool {
 	return chip8.draw_screen
+}
+
+func (chip8 *Chip8) GetDisplayVector() [32][64]byte {
+	return chip8.gfx
 }
 
 func (chip8 *Chip8) SetDraw(draw bool) {
@@ -104,9 +109,10 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 
 		case 0x00E0:
 			for i := 0; i < len(chip8.gfx); i++ {
-				chip8.gfx[i] = 0x0
+				for j := 0; j < len(chip8.gfx[i]); j++ {
+					chip8.gfx[i][j] = 0x0
+				}
 			}
-
 			chip8.draw_screen = true
 
 		case 0x00EE:
@@ -236,23 +242,21 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 
 		chip8.registers[0xF] = 0
 
-		xPos := chip8.registers[x] % VIDEO_WIDTH
-		yPos := chip8.registers[y] % VIDEO_HEIGHT
+		var line uint16 = 0
+		var col uint16 = 0
 
 		// Screen line loop
-		for line := 0; line < int(height); line++ {
-			spriteByte := chip8.memory[chip8.I+uint16(line)]
+		for line = 0; line < height; line++ {
+			spriteByte := chip8.memory[chip8.I+line]
 
 			// Pixel from each line loop
-			for col := 0; col < 8; col++ {
+			for col = 0; col < 8; col++ {
 				spritePixel := spriteByte & (0x80 >> col)
-				screenPixel := &chip8.gfx[(yPos+uint8(line))*VIDEO_WIDTH+(xPos+uint8(col))]
 				if spritePixel != 0 {
-					if *screenPixel == 0xFFFFFFFF {
+					if chip8.gfx[y+line][x+col] == 1 {
 						chip8.registers[0xF] = 1
 					}
-
-					*screenPixel ^= 0xFFFFFFFF
+					chip8.gfx[(y + line)][x+col] ^= 1
 				}
 			}
 		}
@@ -277,10 +281,17 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 			chip8.registers[x] = chip8.delay_timer
 
 		case 0x0A:
+			isPressed := false
 			for i := 0; i < len(GetKeys()); i++ {
 				if IsPressed(i) {
 					chip8.registers[x] = uint8(i)
+					isPressed = true
 				}
+			}
+
+			if isPressed {
+				fmt.Println("Nothing was pressed !!!!")
+				chip8.pc -= 2
 			}
 
 		case 0x15:
@@ -295,18 +306,18 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 		case 0x29:
 			digit := chip8.registers[x]
 
-			chip8.I = 0x50 + uint16(digit * 5)
+			chip8.I = 0x50 + uint16(digit*5)
 
 		case 0x33:
 			number := chip8.registers[x]
 
-			chip8.memory[chip8.I +2 ] = number % 10
-      number /= 10
+			chip8.memory[chip8.I+2] = number % 10
+			number /= 10
 
 			chip8.memory[chip8.I+1] = number % 10
-      number /= 10
+			number /= 10
 
-      chip8.memory[chip8.I] = number % 10
+			chip8.memory[chip8.I] = number % 10
 
 		case 0x55:
 			var i uint16
@@ -332,9 +343,8 @@ func (chip8 *Chip8) EmulationCycle() {
 	x := (opcode & 0x0F00) >> 8
 	y := (opcode & 0x00F0) >> 4
 
-	chip8.pc += 2
-
 	chip8.executeOpcodes(x, y, opcode)
+	chip8.pc += 2
 
 	chip8.updateTimers()
 }

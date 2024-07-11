@@ -9,7 +9,7 @@ import (
 
 const DISPLAY_WIDTH = 64
 const DISPLAY_HEIGHT = 32
-const SCALE = 30
+const SCALE = 10
 
 func main() {
 	if len(os.Args) < 2 {
@@ -28,7 +28,7 @@ func main() {
 	for !quit {
 		c8.EmulationCycle()
 		if c8.ShouldDraw() {
-			sc.Render(c8)
+			sc.Render(c8, SCALE)
 		}
 	}
 }
