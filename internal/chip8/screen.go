@@ -40,15 +40,15 @@ func (screen *Screen) Clear(c8 Chip8) {
 }
 
 func (screen *Screen) Render(c8 Chip8, modif int) {
-	screen.renderer.SetDrawColor(255, 255, 0, 255)
+	screen.renderer.SetDrawColor(0, 0, 0, 255)
 	screen.renderer.Clear()
 
 	for j := 0; j < len(c8.gfx); j++ {
 		for i := 0; i < len(c8.gfx[j]); i++ {
 			if c8.gfx[j][i] != 0 {
-				screen.renderer.SetDrawColor(255, 255, 0, 255)
+				screen.renderer.SetDrawColor(255, 255, 255, 255)
 			} else {
-				screen.renderer.SetDrawColor(255, 0, 0, 255)
+				screen.renderer.SetDrawColor(0, 0, 0, 255)
 			}
 
 			screen.renderer.FillRect(&sdl.Rect{

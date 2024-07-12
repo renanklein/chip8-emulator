@@ -5,11 +5,14 @@ import (
 	"os"
 
 	"github.com/renanklein/chip8-emulator/internal/chip8"
+	"github.com/veandco/go-sdl2/sdl"
 )
 
-const DISPLAY_WIDTH = 64
-const DISPLAY_HEIGHT = 32
-const SCALE = 10
+const (
+	DISPLAY_WIDTH  = 64
+	DISPLAY_HEIGHT = 32
+	SCALE          = 10
+)
 
 func main() {
 	if len(os.Args) < 2 {
@@ -30,16 +33,28 @@ func main() {
 		if c8.ShouldDraw() {
 			sc.Render(c8, SCALE)
 		}
+
+		chip8.HandleKeyboard()
+		sdl.Delay(1000 / 60)
 	}
 }
 
 func getRomData(filename string) []byte {
-	data, err := os.ReadFile(filename)
-
+	file, err := os.OpenFile(filename, os.O_RDONLY, 0777)
 	if err != nil {
 		error_message := fmt.Sprintf("Could not load ROM, something went wrong: %s", err.Error())
 		panic(error_message)
 	}
 
-	return data
+	stat, errStat := file.Stat()
+
+	if errStat != nil {
+		panic("Something went wrong on reading file data")
+	}
+
+	buffer := make([]byte, stat.Size())
+
+	file.Read(buffer)
+
+	return buffer
 }

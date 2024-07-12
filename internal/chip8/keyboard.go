@@ -1,6 +1,10 @@
 package chip8
 
-import "azul3d.org/engine/keyboard"
+import (
+	"os"
+
+	"github.com/veandco/go-sdl2/sdl"
+)
 
 var keys [16]bool
 
@@ -23,82 +27,90 @@ var fontset = [80]uint8{
 	0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 }
 
-func KeyPressed(keyCode int) {
-	switch keyCode {
-	case int(keyboard.One):
-		keys[1] = true
-	case int(keyboard.Two):
-		keys[2] = true
-	case int(keyboard.Three):
-		keys[3] = true
-	case int(keyboard.Four):
-		keys[0xA] = true
-	case int(keyboard.Q):
-		keys[4] = true
-	case int(keyboard.W):
-		keys[5] = true
-	case int(keyboard.E):
-		keys[6] = true
-	case int(keyboard.R):
-		keys[0xD] = true
-	case int(keyboard.A):
-		keys[7] = true
-	case int(keyboard.S):
-		keys[8] = true
-	case int(keyboard.D):
-		keys[9] = true
-	case int(keyboard.F):
-		keys[0xE] = true
-	case int(keyboard.Z):
-		keys[0xA] = true
-	case int(keyboard.X):
-		keys[0] = true
-	case int(keyboard.C):
-		keys[0xB] = true
-	case int(keyboard.V):
-		keys[0xF] = true
-	}
+func HandleKeyboard() {
+	for event := sdl.PollEvent(); event != nil; event = sdl.PollEvent() {
+		switch eventType := event.(type) {
+		case *sdl.QuitEvent:
+			os.Exit(0)
 
+		case *sdl.KeyboardEvent:
+			if eventType.Type == sdl.KEYUP {
+				switch eventType.Keysym.Sym {
+				case sdl.K_1:
+					keys[0x1] = false
+				case sdl.K_2:
+					keys[0x2] = false
+				case sdl.K_3:
+					keys[0x3] = false
+				case sdl.K_4:
+					keys[0xC] = false
+				case sdl.K_q:
+					keys[0x4] = false
+				case sdl.K_w:
+					keys[0x5] = false
+				case sdl.K_e:
+					keys[0x6] = false
+				case sdl.K_r:
+					keys[0xD] = false
+				case sdl.K_a:
+					keys[0x7] = false
+				case sdl.K_s:
+					keys[0x8] = false
+				case sdl.K_d:
+					keys[0x9] = false
+				case sdl.K_f:
+					keys[0xE] = false
+				case sdl.K_z:
+					keys[0xA] = false
+				case sdl.K_x:
+					keys[0x0] = false
+				case sdl.K_c:
+					keys[0xB] = false
+				case sdl.K_v:
+					keys[0xF] = false
+				}
+			} else if eventType.Type == sdl.KEYDOWN {
+				switch eventType.Keysym.Sym {
+				case sdl.K_1:
+					keys[0x1] = true
+				case sdl.K_2:
+					keys[0x2] = true
+				case sdl.K_3:
+					keys[0x3] = true
+				case sdl.K_4:
+					keys[0xC] = true
+				case sdl.K_q:
+					keys[0x4] = true
+				case sdl.K_w:
+					keys[0x5] = true
+				case sdl.K_e:
+					keys[0x6] = true
+				case sdl.K_r:
+					keys[0xD] = true
+				case sdl.K_a:
+					keys[0x7] = true
+				case sdl.K_s:
+					keys[0x8] = true
+				case sdl.K_d:
+					keys[0x9] = true
+				case sdl.K_f:
+					keys[0xE] = true
+				case sdl.K_z:
+					keys[0xA] = true
+				case sdl.K_x:
+					keys[0x0] = true
+				case sdl.K_c:
+					keys[0xB] = true
+				case sdl.K_v:
+					keys[0xF] = true
+
+				}
+			}
+		}
+	}
 }
 
-func KeyReleased(keycode int) {
-	switch keycode {
-	case int(keyboard.One):
-		keys[1] = false
-	case int(keyboard.Two):
-		keys[2] = false
-	case int(keyboard.Three):
-		keys[3] = false
-	case int(keyboard.Four):
-		keys[0xA] = false
-	case int(keyboard.Q):
-		keys[4] = false
-	case int(keyboard.W):
-		keys[5] = false
-	case int(keyboard.E):
-		keys[6] = false
-	case int(keyboard.R):
-		keys[0xD] = false
-	case int(keyboard.A):
-		keys[7] = false
-	case int(keyboard.S):
-		keys[8] = false
-	case int(keyboard.D):
-		keys[9] = false
-	case int(keyboard.F):
-		keys[0xE] = false
-	case int(keyboard.Z):
-		keys[0xA] = false
-	case int(keyboard.X):
-		keys[0] = false
-	case int(keyboard.C):
-		keys[0xB] = false
-	case int(keyboard.V):
-		keys[0xF] = false
-	}
-}
-
-func IsPressed(index int) bool {
+func IsPressed(index uint8) bool {
 	return keys[index]
 }
 
