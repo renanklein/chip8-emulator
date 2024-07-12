@@ -256,6 +256,8 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 		chip8.pc += 2
 
 	case 0xD000:
+    xPos := chip8.registers[x]
+    yPos := chip8.registers[y]
 		height := (opcode & 0x000F)
 
 		chip8.registers[0xF] = 0
@@ -271,10 +273,10 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 			for col = 0; col < 8; col++ {
 				spritePixel := spriteByte & (0x80 >> col)
 				if spritePixel != 0 {
-					if chip8.gfx[y+uint8(line)][x+uint8(col)] == 1 {
+					if chip8.gfx[yPos+uint8(line)][xPos+uint8(col)] == 1 {
 						chip8.registers[0xF] = 1
 					}
-					chip8.gfx[y+ uint8(line)][x+ uint8(col)] ^= 1
+					chip8.gfx[yPos+ uint8(line)][xPos+ uint8(col)] ^= 1
 				}
 			}
 		}
