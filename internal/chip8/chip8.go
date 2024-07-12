@@ -1,19 +1,20 @@
 package chip8
 
 import (
-	"fmt"
 	"math/rand"
 )
 
-const VIDEO_WIDTH = 64
-const VIDEO_HEIGHT = 32
+const (
+	VIDEO_WIDTH  = 64
+	VIDEO_HEIGHT = 32
+)
 
 type Chip8 struct {
 	memory      [4096]uint8
 	registers   [16]uint8
 	I           uint16
 	pc          uint16
-	gfx         [32][64]byte
+	gfx         [32][64]uint8
 	delay_timer uint8
 	sound_timer uint8
 
@@ -114,10 +115,12 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 				}
 			}
 			chip8.draw_screen = true
+			chip8.pc += 2
 
 		case 0x00EE:
 			chip8.sp--
 			chip8.pc = chip8.stack[chip8.sp]
+			chip8.pc += 2
 		}
 
 	case 0x1000:
@@ -134,6 +137,8 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 		b := (opcode & 0x00FF)
 		if uint16(chip8.registers[x]) == b {
 			// jumps instruction
+			chip8.pc += 4
+		} else {
 			chip8.pc += 2
 		}
 	case 0x4000:
@@ -141,13 +146,18 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 
 		if (uint16(chip8.registers[x])) != b {
 			chip8.pc += 2
+		} else {
+			chip8.pc += 2
 		}
 
 	case 0x5000:
 
 		if (uint16(chip8.registers[x])) == (uint16(chip8.registers[y])) {
 			chip8.pc += 2
+		} else {
+			chip8.pc += 2
 		}
+
 	case 0x6000:
 		b := opcode & 0x00FF
 		chip8.registers[x] = uint8(b)
@@ -161,21 +171,26 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 		}
 
 		chip8.registers[x] = uint8(result)
+		chip8.pc += 2
 
 	case 0x8000:
 		switch opcode & 0xF {
 
 		case 0x0:
 			chip8.registers[x] = chip8.registers[y]
+			chip8.pc += 2
 
 		case 0x1:
 			chip8.registers[x] |= chip8.registers[y]
+			chip8.pc += 2
 
 		case 0x2:
 			chip8.registers[x] &= chip8.registers[y]
+			chip8.pc += 2
 
 		case 0x3:
 			chip8.registers[x] ^= chip8.registers[y]
+			chip8.pc += 2
 
 		case 0x4:
 			result := chip8.registers[x] + chip8.registers[y]
@@ -187,6 +202,7 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 			}
 
 			chip8.registers[x] = result & 0xFF
+			chip8.pc += 2
 
 		case 0x5:
 			if chip8.registers[y] > chip8.registers[x] {
@@ -198,10 +214,12 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 			result := chip8.registers[x] - chip8.registers[y]
 
 			chip8.registers[x] = result
+			chip8.pc += 2
 
 		case 0x6:
 			chip8.registers[0xF] = (chip8.registers[x] & 0x1)
 			chip8.registers[x] = (chip8.registers[x] >> 1)
+			chip8.pc += 2
 
 		case 0x7:
 			if chip8.registers[x] > chip8.registers[y] {
@@ -213,20 +231,25 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 			result := chip8.registers[y] - chip8.registers[x]
 
 			chip8.registers[x] = result
+			chip8.pc += 2
 
 		case 0xE:
 			chip8.registers[0xF] = (chip8.registers[x] & 0x80) >> 7
 			chip8.registers[x] = chip8.registers[x] << 1
+			chip8.pc += 2
 
 		}
 
 	case 0x9000:
 		if chip8.registers[x] != chip8.registers[y] {
+			chip8.pc += 4
+		} else {
 			chip8.pc += 2
 		}
 
 	case 0xA000:
 		chip8.I = (opcode & 0x0FFF)
+		chip8.pc += 2
 
 	case 0xB000:
 		opcode_addr := (opcode & 0x0FFF)
@@ -236,6 +259,7 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 		rand_number := uint8(rand.Intn(256))
 
 		chip8.registers[x] = rand_number & uint8(opcode&0x00FF)
+		chip8.pc += 2
 
 	case 0xD000:
 		height := (opcode & 0x000F)
@@ -256,21 +280,26 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 					if chip8.gfx[y+line][x+col] == 1 {
 						chip8.registers[0xF] = 1
 					}
-					chip8.gfx[(y + line)][x+col] ^= 1
+					chip8.gfx[y+line][x+col] ^= 1
 				}
 			}
 		}
 
 		chip8.draw_screen = true
+		chip8.pc += 2
 
 	case 0xE000:
 		switch opcode & 0xFF {
 		case 0x9E:
 			if IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
 				chip8.pc += 2
 			}
 		case 0xA1:
 			if !IsPressed(int(chip8.registers[x])) {
+				chip8.pc += 4
+			} else {
 				chip8.pc += 2
 			}
 
@@ -289,24 +318,27 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 				}
 			}
 
-			if isPressed {
-				fmt.Println("Nothing was pressed !!!!")
-				chip8.pc -= 2
+			if !isPressed {
+				return
 			}
 
 		case 0x15:
 			chip8.delay_timer = chip8.registers[x]
+			chip8.pc += 2
 
 		case 0x18:
 			chip8.sound_timer = chip8.registers[x]
+			chip8.pc += 2
 
 		case 0x1E:
 			chip8.I += uint16(chip8.registers[x])
+			chip8.pc += 2
 
 		case 0x29:
 			digit := chip8.registers[x]
 
 			chip8.I = 0x50 + uint16(digit*5)
+			chip8.pc += 2
 
 		case 0x33:
 			number := chip8.registers[x]
@@ -318,6 +350,7 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 			number /= 10
 
 			chip8.memory[chip8.I] = number % 10
+			chip8.pc += 2
 
 		case 0x55:
 			var i uint16
@@ -325,12 +358,14 @@ func (chip8 *Chip8) executeOpcodes(x uint16, y uint16, opcode uint16) {
 				memory_addr := chip8.I + i
 				chip8.memory[memory_addr] = chip8.registers[i]
 			}
+			chip8.pc += 2
 
 		case 0x65:
 			var i uint16
 			for i = 0; i <= x; i++ {
 				chip8.registers[i] = chip8.memory[chip8.I+i]
 			}
+			chip8.pc += 2
 
 		}
 
@@ -344,7 +379,6 @@ func (chip8 *Chip8) EmulationCycle() {
 	y := (opcode & 0x00F0) >> 4
 
 	chip8.executeOpcodes(x, y, opcode)
-	chip8.pc += 2
 
 	chip8.updateTimers()
 }
