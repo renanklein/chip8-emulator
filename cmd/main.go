@@ -11,7 +11,7 @@ import (
 const (
 	DISPLAY_WIDTH  = 64
 	DISPLAY_HEIGHT = 32
-	SCALE          = 30
+	SCALE          = 10
 )
 
 func main() {

@@ -1,6 +1,7 @@
 package chip8
 
 import (
+	"fmt"
 	"math/rand"
 )
 
@@ -23,17 +24,10 @@ type Chip8 struct {
 	// Stack
 	stack [16]uint16
 	sp    uint8
-
-	// Keypad
-	keypad [16]uint8
 }
 
 func (chip8 *Chip8) ShouldDraw() bool {
 	return chip8.draw_screen
-}
-
-func (chip8 *Chip8) GetDisplayVector() [32][64]byte {
-	return chip8.gfx
 }
 
 func (chip8 *Chip8) SetDraw(draw bool) {
@@ -175,21 +169,21 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 			chip8.pc += 2
 
 		case 0x0001:
-			chip8.registers[x] = chip8.registers[x] | chip8.registers[y]
+			chip8.registers[x] |= chip8.registers[y]
 			chip8.pc += 2
 
 		case 0x0002:
-			chip8.registers[x] = chip8.registers[x] & chip8.registers[y]
+			chip8.registers[x] &= chip8.registers[y]
 			chip8.pc += 2
 
 		case 0x0003:
-			chip8.registers[x] = chip8.registers[x] ^ chip8.registers[y]
+			chip8.registers[x] ^= chip8.registers[y]
 			chip8.pc += 2
 
 		case 0x0004:
 			result := chip8.registers[x] + chip8.registers[y]
 
-			if chip8.registers[y] > 0xFF - chip8.registers[x] {
+			if chip8.registers[y] > 0xFF-chip8.registers[x] {
 				chip8.registers[0xf] = 1
 			} else {
 				chip8.registers[0xf] = 0
@@ -200,9 +194,9 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 
 		case 0x0005:
 			if chip8.registers[y] > chip8.registers[x] {
-				chip8.registers[0xf] = 0
+				chip8.registers[0xF] = 0
 			} else {
-				chip8.registers[0xf] = 1
+				chip8.registers[0xF] = 1
 			}
 
 			result := chip8.registers[x] - chip8.registers[y]
@@ -256,8 +250,8 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 		chip8.pc += 2
 
 	case 0xD000:
-    xPos := chip8.registers[x]
-    yPos := chip8.registers[y]
+		xPos := chip8.registers[x]
+		yPos := chip8.registers[y]
 		height := (opcode & 0x000F)
 
 		chip8.registers[0xF] = 0
@@ -276,7 +270,7 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 					if chip8.gfx[yPos+uint8(line)][xPos+uint8(col)] == 1 {
 						chip8.registers[0xF] = 1
 					}
-					chip8.gfx[yPos+ uint8(line)][xPos+ uint8(col)] ^= 1
+					chip8.gfx[yPos+uint8(line)][xPos+uint8(col)] ^= 1
 				}
 			}
 		}
@@ -308,9 +302,11 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 
 		case 0x000A:
 			isPressed := false
+			fmt.Println("Keyboard instruction")
 			for i := 0; i < len(GetKeys()); i++ {
 				if IsPressed(uint8(i)) {
 					chip8.registers[x] = uint8(i)
+					fmt.Println("Pressed !")
 					isPressed = true
 				}
 			}
@@ -347,11 +343,11 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 		case 0x0033:
 			number := chip8.registers[x]
 
-			chip8.memory[chip8.I] = number/100
+			chip8.memory[chip8.I] = number / 100
 
-			chip8.memory[chip8.I+1] = (number/10) % 10
+			chip8.memory[chip8.I+1] = (number / 10) % 10
 
-			chip8.memory[chip8.I + 2] = (number%100)/10
+			chip8.memory[chip8.I+2] = (number % 100) / 10
 			chip8.pc += 2
 
 		case 0x0055:
@@ -365,7 +361,7 @@ func (chip8 *Chip8) executeOpcodes(x uint8, y uint8, opcode uint16) {
 
 		case 0x0065:
 			var i uint16
-			for i = 0; i <= uint16(x + 1); i++ {
+			for i = 0; i <= uint16(x+1); i++ {
 				chip8.registers[i] = chip8.memory[chip8.I+i]
 			}
 			chip8.I = uint16(x + 1)
